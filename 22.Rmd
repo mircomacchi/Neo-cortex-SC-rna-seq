@@ -1,0 +1,121 @@
+---
+title: "Bulk RNAseq"
+author: "Macchi Mirco - 982237"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Load the libraries and the file needed
+```{r}
+library(tidyr)
+library(edgeR)
+library(recount)
+library(GenomicRanges)
+library(sessioninfo)
+```
+```{r}
+setwd("D:\\OneDrive - Politecnico di Milano\\PoliMirco\\Primo anno\\Secondo semestre\\Genomics and Transcriptomics\\Trascriptomics\\TransProject\\Rdata")
+lung <- get(load("rse_gene_lung_2_scaled.RData"))    
+liver <- get(load("rse_gene_liver_8_scaled.RData"))  
+brain <- get(load("rse_gene_brain_9_scaled.RData"))
+```
+
+## Preprocessing of count tables:
+Remove reads mapping to short RNAs and mitochondrial RNAs
+
+ - Brain count table:
+
+```{r}
+brain_short <- brain@rowRanges[brain@rowRanges$bp_length < 200,] # short RNAs
+read_counts_brain <- assay(brain) # create a matrix of interest
+tot_reads_brain <- colSums(read_counts_brain)
+read_count_brain_short <- read_counts_brain[names(brain_short),]
+```
+```{r}
+brain <- brain[brain@rowRanges$bp_length >= 200,] # retain only longer RNAs
+read_counts_brain <- read_counts_brain[names(brain@rowRanges),]
+brain_df <- as.data.frame(brain@rowRanges)
+brain_df <- unnest(brain_df, symbol)
+brain_mito<- brain_df$gene_id[brain_df$seqnames=="chrM"] # address those genes who maps on mitochondrial chromosome
+read_counts_brain_mito<- read_counts_brain[brain_mito,]  # and count them
+```
+
+```{r}
+counts_table_brain<- read_counts_brain[!(unique(brain_df$gene_id)%in% brain_mito),]
+counts_table_brain <- counts_table_brain[,c(2,3,4)] # retrieve only the columns we're interested in
+head(counts_table_brain)
+```
+Then, we sum the reads of each column and store them in a vector
+```{r}
+tot_short_reads_brain <- colSums(read_count_brain_short)
+tot_reads_brain_mt <- colSums(read_counts_brain_mito)
+```
+
+ - Lung count table preprocessing:
+
+```{r}
+lung_short <- lung@rowRanges[lung@rowRanges$bp_length < 200,] 
+read_counts_lung <- assay(lung)
+tot_reads_lung <- colSums(read_counts_lung)
+read_count_lung_short <- read_counts_lung[names(lung_short),]
+```
+
+
+Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+
+- Never uses retina figures
+- Has a smaller default figure size
+- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))
