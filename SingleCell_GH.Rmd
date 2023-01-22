@@ -1,0 +1,308 @@
+---
+title: "Single Cell RNA expression evaluation"
+author: "Macchi Mirco"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+contact: mirco.macchi@live.it
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## tissue: neo-cortex (SRA667466)
+## species: Mus musculus
+Source: PanglaoDB
+
+The goal of the project is to characterize the main cell types present in our sample.
+
+Load the necessary files and libraries.
+```{r,warning=FALSE,message=FALSE}
+library(Seurat)
+library(dplyr)
+library(patchwork) 
+library(ggplot2)
+setwd("D:\\OneDrive - Università degli Studi di Milano\\PoliMirco\\Primo anno\\Secondo semestre\\Genomics and Transcriptomics\\Trascriptomics\\TransProject\\SingleCell")
+load("SRA667466_SRS3059977.sparse.RData")
+```
+After loading the dataset, we want to change the gene ID's to gene symbol.
+```{r}
+head(sm@Dimnames[[1]],10)
+```
+
+
+```{r}
+rownames(sm) <- gsub("[_].*", replacement = "", x = rownames(sm))
+head(sm@Dimnames[[1]],10)
+```
+
+## Prefiltering
+Only those genes which are found to be expressed in at least 3 cells are kept. 
+Also, we are filtering out cells expressing less than 200 genes.
+In addition, we calculate mitochondrial QC metrics with the PercentageFeatureSet function, which calculates the percentage of counts originating from mitochondrial genes. We use the set of all genes with name starting with mt- to identify mitochondrial genes. 
+
+```{r}
+neocortex <- CreateSeuratObject(counts = sm, project = "NeoC10k",
+                             min.cells=3, min.features=200) 
+neocortex   
+neocortex[["percent.mt"]] <- PercentageFeatureSet(neocortex, pattern = "^mt-") # add a column for each cell indicating the % of mitochondrial genes
+head(neocortex)
+
+```
+## Data visualization and Quality Control
+From the violin plot, we get a first impression about the number of genes in each cell and the % of mitochondrial RNA. 
+We will preproccess the data according to these parameters.
+```{r, fig.height=5, fig.width=6}
+VlnPlot(neocortex, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=0)
+
+```
+
+```{r, fig.height=5, fig.width=6}
+plot1 <- FeatureScatter(neocortex, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(neocortex, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+plot1 + plot2
+```
+
+
+
+```{r}
+dim(neocortex)
+```
+
+## Filtering
+We retain cells expressing a minimum of 200 genes.
+From the previous plots, it seems that cells expressing more than 2500 genes are artifacts. They could be doublets.
+Moreover, we eliminate empty droplets by setting a lower limit of 200 genes per cell.
+Next, we set a threshold for cells containing a percentage of mitochondrial counts equal to 10% to filter out low quality or damaged cells. 
+
+
+```{r}
+neocortex <- subset(neocortex, subset = nFeature_RNA > 200 & nFeature_RNA < 2500  & percent.mt < 10 & nCount_RNA < 3000)
+dim(neocortex)
+```
+
+## Normalization
+
+By default, Seaurat implies a LogNormalization,where feature counts for each cell are dividev by the total counts for that cell and multiplied by 10.000, to improve the interpretability of the data.
+Also, we find the 2000 most meaningful genes.
+```{r}
+neocortex <- NormalizeData(neocortex, normalization.method = "LogNormalize", scale.factor = 10000)
+#choose the more meaningful genes: most variable genes wrt average across cells
+neocortex <- FindVariableFeatures(neocortex, selection.method = "vst", nfeatures = 4000)
+```
+
+VariableFeatures is applied to get variable genes information.
+FindVariableFeatures function identified the most variable ones on the mean variability plot. In this case, we chose "vst" method, fitting a line for the relationship between log(variance) and log(mean) with local polynomial regression and standardizing the feature values using the observed mean and expected variance.
+We thus identified the 10 most variable genes.
+```{r}
+top10 <- head(VariableFeatures(neocortex), 10)
+top10
+```
+Plot variable features with and without labels.
+
+```{r, fig.height=5, fig.width=6}
+plot1 <- VariableFeaturePlot(neocortex)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+plot2
+```
+
+Data Visualization after filtering.
+
+```{r, fig.height=5, fig.width=6}
+VlnPlot(neocortex, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=0)
+```
+
+## Data scaling
+We proceeded scaling data as recommended by Seurat guidelines.  
+  
+```{r}
+all.genes <- rownames(neocortex)
+neocortex <- ScaleData(neocortex, features = all.genes)
+head(neocortex[["RNA"]]@scale.data[1,])
+```
+## Cell cycle
+
+First, we assign each cell a score, based on its expression of G2/M and S phase markers. These marker sets should be anticorrelated in their expression levels, and cells expressing neither are likely not cycling and in G1 phase.
+
+We assign scores in the CellCycleScoring function, which stores S and G2/M scores in object meta data, along with the predicted classification of each cell in either G2M, S or G1 phase.
+
+```{r}
+
+cc.genes
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+neocortex <- CellCycleScoring(neocortex, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+head(neocortex)
+```
+
+
+## Dimensionality reduction
+
+Now we run a principal component analysis to find the main responsible for variability in the dataset.
+Here we get the most significative up and down regulated genes for each principal component. 
+```{r}
+neocortex <- RunPCA(neocortex, features = VariableFeatures(object = neocortex))
+neocortex[["pca"]] # MOST VARIABLE FREATURES
+print(neocortex[["pca"]], dims = 1:5, nfeatures = 5)
+
+```
+
+```{r, fig.height=5, fig.width=6}
+VizDimLoadings(neocortex, dims = 1:2, reduction = "pca")
+
+```
+
+The following step is to determine whether cell cycle is a clusterization factor.
+
+```{r, fig.height=5, fig.width=6}
+DimPlot(neocortex, reduction = "pca")
+```
+
+Cell cycle seems not to be a key factor in grouping of the cells.
+Hence, we don't have to remove this factor we are taking into account for subsequent analyses.
+
+```{r, fig.height=5, fig.width=6}
+DimPlot(neocortex, reduction = "pca", dims = c(3,4))
+
+```
+```{r, fig.height=5, fig.width=5}
+DimHeatmap(neocortex, dims = 1, cells = 500, balanced = TRUE)
+```
+
+It looks like there are some genes with a difference of expression across the most variable cells. 
+Let's have a look to the other PCs:
+
+```{r, fig.height=6, fig.width=6}
+DimHeatmap(neocortex, dims = 1:9, cells = 500, balanced = TRUE)
+```
+
+To determine the optimal number of dimension, we produce a Elbow plot, showing the standard deviations for each principal component.
+```{r, fig.height=5, fig.width=6}
+ElbowPlot(neocortex, ndims = 50)
+```
+
+We observed the presence of the "elbow" around 16,thus we decided to try to perform a first exploratory clustering with values from 10 to 20. However, the clustering with 10,16 and 20 were sub-optimal in subsequent cell characterization. 
+
+Seurat computes the k nearest neighbors for our dataset, based on Euclidean distance in PCA space and definition of edge weights between any two cells based on shared overlap in their local neighborhoods (Jaccard similarity), optimized with Louvain algorithm and defining the desired resultion of the clusters.
+Resolution, a parameter to define the granularity of the components, was evaluated from 0.4 till 2.
+However, selecting the best parameters was a delicate task due to the thin line between addressing a sub-cellular type and signal noise.
+Here only analyses conducted on 10 and 40 dimensions are reported.
+
+```{r}
+neocortex10  <- FindNeighbors(neocortex, dims = 1:10)
+neocortex10 <- FindClusters(neocortex10, resolution = 0.5) 
+summary(neocortex10@meta.data$seurat_clusters)
+```
+
+Plot the clusters:
+
+```{r, fig.height=5, fig.width=6}
+DimPlot(neocortex10, reduction = "pca")
+```
+
+We can appreciate that cells clustered together were localized close to each other in the 2D plot representation. 
+
+However, we knew that this was only an approximation due to the fact that there are also other components to consider.
+
+## Clustering visualization UMAP
+
+UMAP alghoritm had been implied to improve the representation of the clusters.
+
+```{r, fig.height=5, fig.width=6}
+neocortex <- RunUMAP(neocortex10, dims = 1:10)
+DimPlot(neocortex, reduction = "umap")
+
+```
+
+## Finding DE genes
+The final step is to give a rationale to the clusters. That is, find which are the “marker genes” (expressed exclusively, or at least over-expressed) in each cluster with respect to the others. Then, trying to figure out, according to the marker genes of each cluster, what could be the corresponding cell type.
+
+By default, Seurat perform this step with a non-parametric test - which is the most suitable choice, since each cluster is made of a quite large number of cells and is hard to assume that data are normally distributed.
+We can find the “differentially expressed genes” for a cluster against the others, with the additional condition that the gene has to be expressed in at least the 25% of the cells in the cluster:
+
+```{r}
+neocortex.mark_wilcox <- FindAllMarkers(neocortex, only.pos = TRUE, 
+                                        min.pct = 0.25, logfc.threshold = 0.25)
+```
+
+To ensure a better comprehension of the biological background, a bibliographic research was conducted.
+From Hrvatin et al (2018), a series of known marker genes were added to better evaluate the clustering, and to double check the findings of the analyses.
+
+```{r}
+marker_genes <- neocortex.mark_wilcox %>% group_by(cluster) %>% top_n(n = 1, wt = avg_log2FC)
+marker_genesNCBI <- c("Slc17a7","Gad1", "Olig1","Aldoc", "Cldn5", "Vtn", "Cx3cr1","Aif1","Mrc1")
+marker_genes
+```
+```{r, fig.height=10, fig.width=10}
+VlnPlot(neocortex, features = marker_genes$gene , pt.size = 0)
+```
+
+## Reclustering
+With 40 dimensions and resolution of 0.5 we obtained more clusters, and thus, more data to explore.
+
+```{r}
+neocortex40 <- FindNeighbors(neocortex, dims = 1:40)
+neocortex40 <- FindClusters(neocortex40, resolution = 0.9)
+summary(neocortex40@meta.data$seurat_clusters)
+```
+
+```{r, fig.height=6, fig.width=6}
+neocortex40 <- RunUMAP(neocortex40, dims = 1:40)
+DimPlot(neocortex40, reduction = "umap")
+```
+
+```{r}
+neocortex.mark40<- FindAllMarkers(neocortex40, only.pos = TRUE, 
+                                        min.pct = 0.25,  logfc.threshold = 0.25)
+top_genes <- neocortex.mark40 %>% group_by(cluster) %>% top_n(n = 1, wt = avg_log2FC)
+top_genes
+```
+
+## Cells labelling
+Finally,a cell type to each cluster was assigned by means of its specific marker genes we had previously identified both in the analyses and in literature.
+
+```{r, fig.height=8, fig.width=8}
+new.cluster.ids <- c("Inhib. Neurons1", "Neurons", "Exc. Neurons", "Batch effect", "Astrocyte", "Astrocyte", 
+                     "Exc. Neurons", "Fibroblasts", "EC","Microglia","Inhib. Neurons2",
+                     "Oligo1","OPC","Macrophages","Oligo2","Inhib. Neurons2","NPC","Pericytes","Macrophages2")
+#EC = Endothelial cells
+#Inhib. = Inhibitory | Exc. = Excitatory
+#OPC = Oligodendrocyte’s progenitor cells
+#NPC = Neuronal Progenitor Cells
+
+names(new.cluster.ids) <- levels(neocortex40)
+neocortex40 <- RenameIdents(neocortex40, new.cluster.ids)
+DimPlot(neocortex40, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
+```
+
+## Appendix
+
+Graphical representation of gene expression per cell cluster are reported below, both representing the findings of the project and the literature ones.
+
+```{r, fig.width=12, fig.height=13}
+VlnPlot(neocortex40, features = c(top_genes$gene) , pt.size = 0)
+```
+
+```{r, fig.width=11, fig.height=13}
+VlnPlot(neocortex40, features = marker_genesNCBI, pt.size=0)
+```
+
+
+```{r, fig.width=10, fig.height=5}
+DoHeatmap(neocortex40, features = top_genes$gene) + NoLegend()
+```
+```{r, fig.width=15, fig.height=13}
+FeaturePlot(neocortex40, features = top_genes$gene)
+```
+
+```{r, fig.width=15, fig.height=13}
+FeaturePlot(neocortex40, features = marker_genesNCBI)
+```
+
