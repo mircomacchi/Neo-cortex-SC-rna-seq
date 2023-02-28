@@ -108,7 +108,7 @@ plots, it seems that cells expressing more than 2500 genes are
 artifacts. They could be doublets. Moreover, we eliminate empty droplets
 by setting a lower limit of 200 genes per cell. Next, we set a threshold
 for cells containing a percentage of mitochondrial counts equal to 10% 
-- since it's a complesx tissue, thus may be more metabolically demanding than other tissues-,
+(since it's a complesx tissue, thus may be more metabolically demanding than other tissues),,
 to filter out low quality or damaged cells.
 
 ``` r
