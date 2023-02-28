@@ -1,4 +1,4 @@
-Untitled
+Single-Cell RNA expression evaluation
 ================
 
 contact: <mirco.macchi@live.it>
@@ -94,7 +94,7 @@ plot2 <- FeatureScatter(neocortex, feature1 = "nCount_RNA", feature2 = "nFeature
 plot1 + plot2
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 dim(neocortex)
@@ -107,7 +107,8 @@ We retain cells expressing a minimum of 200 genes. From the previous
 plots, it seems that cells expressing more than 2500 genes are
 artifacts. They could be doublets. Moreover, we eliminate empty droplets
 by setting a lower limit of 200 genes per cell. Next, we set a threshold
-for cells containing a percentage of mitochondrial counts equal to 10%
+for cells containing a percentage of mitochondrial counts equal to 10% 
+- since it's a complesx tissue, thus may be more metabolically demanding than other tissues-,
 to filter out low quality or damaged cells.
 
 ``` r
@@ -154,7 +155,7 @@ plot2
 #> Warning: Transformation introduced infinite values in continuous x-axis
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Data Visualization after filtering.
 
@@ -162,7 +163,7 @@ Data Visualization after filtering.
 VlnPlot(neocortex, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=0)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ## Data scaling
 
@@ -327,9 +328,9 @@ print(neocortex[["pca"]], dims = 1:5, nfeatures = 5)
 ``` r
 VizDimLoadings(neocortex, dims = 1:2, reduction = "pca")
 ```
-
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
-
+<p align="center">
+![](figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+</p>
 The following step is to determine whether cell cycle is a
 clusterization factor.
 
@@ -337,7 +338,7 @@ clusterization factor.
 DimPlot(neocortex, reduction = "pca")
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 Cell cycle seems not to be a key factor in grouping of the cells. Hence,
 we don’t have to remove this factor we are taking into account for
@@ -347,13 +348,13 @@ subsequent analyses.
 DimPlot(neocortex, reduction = "pca", dims = c(3,4))
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 DimHeatmap(neocortex, dims = 1, cells = 500, balanced = TRUE)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 It looks like there are some genes with a difference of expression
 across the most variable cells. Let’s have a look to the other PCs:
@@ -362,7 +363,7 @@ across the most variable cells. Let’s have a look to the other PCs:
 DimHeatmap(neocortex, dims = 1:9, cells = 500, balanced = TRUE)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 To determine the optimal number of dimension, we produce a Elbow plot,
 showing the standard deviations for each principal component.
@@ -371,7 +372,7 @@ showing the standard deviations for each principal component.
 ElbowPlot(neocortex, ndims = 50)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 We observed the presence of the “elbow” around 16,thus we decided to try
 to perform a first exploratory clustering with values from 10 to 20.
@@ -402,6 +403,10 @@ neocortex10 <- FindClusters(neocortex10, resolution = 0.5)
 #> Maximum modularity in 10 random starts: 0.9184
 #> Number of communities: 16
 #> Elapsed time: 1 seconds
+
+```
+Reporting number of cells per cluster:
+```
 summary(neocortex10@meta.data$seurat_clusters)
 #>    0    1    2    3    4    5    6    7    8    9   10   11   12   13   14   15 
 #> 2911 1367 1322  888  879  561  481  407  393  335  326  244  236  192  145   24
@@ -413,7 +418,7 @@ Plot the clusters:
 DimPlot(neocortex10, reduction = "pca")
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 We can appreciate that cells clustered together were localized close to
 each other in the 2D plot representation.
@@ -448,7 +453,7 @@ neocortex <- RunUMAP(neocortex10, dims = 1:10)
 DimPlot(neocortex, reduction = "umap")
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ## Finding DE genes
 
@@ -521,7 +526,7 @@ marker_genes
 VlnPlot(neocortex, features = marker_genes$gene , pt.size = 0)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ## Reclustering
 
@@ -568,7 +573,7 @@ neocortex40 <- RunUMAP(neocortex40, dims = 1:40)
 DimPlot(neocortex40, reduction = "umap")
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ``` r
 neocortex.mark40<- FindAllMarkers(neocortex40, only.pos = TRUE, 
@@ -639,9 +644,34 @@ neocortex40 <- RenameIdents(neocortex40, new.cluster.ids)
 DimPlot(neocortex40, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ## Appendix
+
+### Marker genes reference 
+
+| Cluster number | Putative Cell Type                      | Marker Gene (Gene Symbol)    | Evidence                                      |
+|----------------|----------------------------------------|-----------------------------|-----------------------------------------------|
+| 0              | Inhibitory neurons1                     | Sncb+ Pvalb                 | PanglaoDB “markers”                           |
+| 1              | Neurons                                 | Atp2b1                      | PanglaoDB “markers”                           |
+| 2              | Excitatory neurons                      | Atpa1, Slc17a7              | PMC5742025                                    |
+| 3              | Batch effect (rRNA contamination)       | RP23-81C12.1 (Gm26917 )     | Genome browser + MGI + Yale Liu, 2020         |
+| 4              | Astrocyte                               | Aldoc                       | PMC5742025                                    |
+| 5              | Astrocyte                               | Synpr                       | ProteinAtlas                                  |
+| 6              | Excitatory neurons                      | Rtn1, Slc17a7               | PMC5742025                                    |
+| 7              | Fibroblasts                             | Mfge8                       | PanglaoDB “markers”                           |
+| 8              | Endothelial cells                       | Cldn5                       | PanglaoDB “markers” + PMC5742025              |
+| 9              | Microglia                               | Cx3cr1 ,hexb, Ctss          | PMC5742025+ PanglaoDB “markers”              |
+| 10             | Inhibitory neurons2                     | Sst                         | PMC3556905                                    |
+| 11             | Oligodendrocytes1                       | Mbp                         | PMC5742025 + PanglaoDB “markers”              |
+| 12             | Oligodendrocyte’s progenitor cells      | C1ql1, Olig1               | PanglagoDB “markers”                          |
+| 13             | Macrophages                             | Ctss                        | PanglaoDB “markers”                           |
+| 14             | Oligodendrocytes2                       | Plp1, Olig1                | PanglaoDB “markers” + PMC5742025              |
+| 15             | Inhibitory neurons2                     | Vip                         | PMC4315827                                    |
+| 16             | Neuronal Progenitor Cells                | Ifgbpl-1                   | PMC5794803                                    |
+| 17             | Pericytes                               | Vtn + Pdgfrb               | PanglaoDB “markers”                           |
+| 18             | Macrophages2                            | Lyz2, Mrc1                 | PanglaoDB “markers” + PMC5742025              |
+
 
 Graphical representation of gene expression per cell cluster are
 reported below, both representing the findings of the project and the
@@ -651,28 +681,28 @@ literature ones.
 VlnPlot(neocortex40, features = c(top_genes$gene) , pt.size = 0)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 VlnPlot(neocortex40, features = marker_genesNCBI, pt.size=0)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ``` r
 DoHeatmap(neocortex40, features = top_genes$gene) + NoLegend()
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 FeaturePlot(neocortex40, features = top_genes$gene)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ``` r
 FeaturePlot(neocortex40, features = marker_genesNCBI)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-36-1.png)<!-- -->
