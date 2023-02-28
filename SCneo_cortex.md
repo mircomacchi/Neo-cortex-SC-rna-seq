@@ -86,7 +86,7 @@ the data according to these parameters.
 VlnPlot(neocortex, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3, pt.size=0)
 ```
 
-![](SCneo_cortex_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 ``` r
 plot1 <- FeatureScatter(neocortex, feature1 = "nCount_RNA", feature2 = "percent.mt")
