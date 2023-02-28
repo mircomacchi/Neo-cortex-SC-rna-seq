@@ -221,6 +221,7 @@ g2m.genes <- cc.genes$g2m.genes
 neocortex <- CellCycleScoring(neocortex, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 ```
 
+``` r
 head(neocortex)
 #>                orig.ident nCount_RNA nFeature_RNA percent.mt      S.Score
 #> AAACATACACCTCC    NeoC10k        241          212  7.4688797  0.096635080
@@ -319,9 +320,9 @@ print(neocortex[["pca"]], dims = 1:5, nfeatures = 5)
 VizDimLoadings(neocortex, dims = 1:2, reduction = "pca")
 ```
 
-<p align="center">
+
 ![](figure-gfm/unnamed-chunk-16-1.png)<!-- -->
-</p>
+
 
 The following step is to determine whether cell cycle is a
 clusterization factor.
