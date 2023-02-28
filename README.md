@@ -1,4 +1,4 @@
-# Neo-cortex-SC-rna-seq
+# Neo-cortex: Single cell RNA-seq expression analysis
 
 <p align="center">
 <img src="figure-gfm/ijms-23-04497-g001.png " width="679" />
