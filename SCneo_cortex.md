@@ -150,9 +150,9 @@ Plot variable features with and without labels.
 ``` r
 plot1 <- VariableFeaturePlot(neocortex)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
-#> When using repel, set xnudge and ynudge to 0 for optimal results
+
 plot2
-#> Warning: Transformation introduced infinite values in continuous x-axis
+
 ```
 
 ![](figure-gfm/unnamed-chunk-11-1.png)<!-- -->
@@ -213,26 +213,14 @@ cc.genes
 #> [36] "NCAPD2"  "DLGAP5"  "CDCA2"   "CDCA8"   "ECT2"    "KIF23"   "HMMR"   
 #> [43] "AURKA"   "PSRC1"   "ANLN"    "LBR"     "CKAP5"   "CENPE"   "CTCF"   
 #> [50] "NEK2"    "G2E3"    "GAS2L3"  "CBX5"    "CENPA"
+```
+
+``` r
 s.genes <- cc.genes$s.genes
 g2m.genes <- cc.genes$g2m.genes
 neocortex <- CellCycleScoring(neocortex, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
-#> Warning: The following features are not present in the object: MCM5, PCNA,
-#> TYMS, FEN1, MCM2, MCM4, RRM1, UNG, GINS2, MCM6, CDCA7, DTL, PRIM1, UHRF1,
-#> MLF1IP, HELLS, RFC2, RPA2, NASP, RAD51AP1, GMNN, WDR76, SLBP, CCNE2, UBR7,
-#> POLD3, MSH2, ATAD2, RAD51, RRM2, CDC45, CDC6, EXO1, TIPIN, DSCC1, BLM,
-#> CASP8AP2, USP1, CLSPN, POLA1, CHAF1B, BRIP1, E2F8, not searching for symbol
-#> synonyms
-#> Warning: The following features are not present in the object: HMGB2, CDK1,
-#> NUSAP1, UBE2C, BIRC5, TPX2, TOP2A, NDC80, CKS2, NUF2, CKS1B, MKI67, TMPO,
-#> CENPF, TACC3, FAM64A, SMC4, CCNB2, CKAP2L, CKAP2, AURKB, BUB1, KIF11, ANP32E,
-#> TUBB4B, GTSE1, KIF20B, HJURP, CDCA3, HN1, CDC20, TTK, CDC25C, KIF2C, RANGAP1,
-#> NCAPD2, DLGAP5, CDCA2, CDCA8, ECT2, KIF23, HMMR, AURKA, PSRC1, ANLN, LBR,
-#> CKAP5, CENPE, CTCF, NEK2, G2E3, GAS2L3, CBX5, CENPA, not searching for symbol
-#> synonyms
-#> Warning in AddModuleScore(object = object, features = features, name = name, :
-#> Could not find enough features in the object from the following feature lists:
-#> S.Score Attempting to match case...Could not find enough features in the object
-#> from the following feature lists: G2M.Score Attempting to match case...
+```
+
 head(neocortex)
 #>                orig.ident nCount_RNA nFeature_RNA percent.mt      S.Score
 #> AAACATACACCTCC    NeoC10k        241          212  7.4688797  0.096635080
@@ -301,6 +289,8 @@ neocortex <- RunPCA(neocortex, features = VariableFeatures(object = neocortex))
 #> Negative:  Cst3, Mfge8, Atp1a2, Plpp3, Cldn10, Btbd17, Gpr37l1, Clu, Gja1, Htra1 
 #>     Pla2g7, Slc1a2, Slc1a3, Ntsr2, F3, Apoe, Bcan, Aldoc, Gjb6, Atp1b2 
 #>     Acsbg1, Fjx1, Sparcl1, S1pr1, Igfbp2, Eva1a, Fgfr3, Cspg5, Tspan7, Fam181b
+```
+``` r
 neocortex[["pca"]] # MOST VARIABLE FREATURES
 #> A dimensional reduction object with key PC_ 
 #>  Number of dimensions: 50 
@@ -328,9 +318,11 @@ print(neocortex[["pca"]], dims = 1:5, nfeatures = 5)
 ``` r
 VizDimLoadings(neocortex, dims = 1:2, reduction = "pca")
 ```
+
 <p align="center">
 ![](figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 </p>
+
 The following step is to determine whether cell cycle is a
 clusterization factor.
 
