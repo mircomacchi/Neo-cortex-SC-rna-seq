@@ -120,7 +120,7 @@ dim(neocortex)
 ## Normalization
 
 By default, Seaurat implies a LogNormalization,where feature counts for
-each cell are dividev by the total counts for that cell and multiplied
+each cell are divided by the total counts for that cell and multiplied
 by 10.000, to improve the interpretability of the data. Also, we find
 the 2000 most meaningful genes.
 
